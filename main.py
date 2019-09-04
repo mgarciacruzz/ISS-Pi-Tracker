@@ -1,39 +1,107 @@
-import itertools
+import time
+import subprocess
+
+from board import SCL, SDA
+import busio
+from PIL import Image, ImageDraw, ImageFont
+import adafruit_ssd1306
+
 import json
 import requests
-from datetime import datetime
-import argparse
+from datetime import datetime, date
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Process  API call parameters ')
-    parser.add_argument('-l', '--location', action='store_true', default=False,
-                        help='Display current location of the ISS')
-    parser.add_argument('-p', '--people', action='store_true', default=False,
-                        help='Display current members of the crew on board the ISS')
-    parser.add_argument('-pt', '--passtime', nargs=2, type=float, metavar=('LAT', 'LONG'),
-                        help='Display pass time for a given latitude and longitude of the ISS')
+def try_fetch_data(url):
+    response = requests.get(url)
 
-    args = parser.parse_args()
+    obj = json.loads(response.content.decode('utf-8'))
 
-    if args.location:
-        get_current_location()
+    return obj
 
-    if args.people:
-        get_crew_members()
 
-    if args.passtime:
-        get_pass_time(args.passtime[0], args.passtime[1])
+def get_pass_time(lat, long):
+    obj = try_fetch_data("http://api.open-notify.org/iss-pass.json?lat=%s&lon=%s" % (lat, long))
 
+    if obj:
+        times = obj['response']
+
+        return datetime.fromtimestamp(times[0]['risetime'])
+    return None           
 
 def get_current_location():
     obj = try_fetch_data("http://api.open-notify.org/iss-now.json")
 
-    time = datetime.utcfromtimestamp(obj['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
-    lat = obj['iss_position']['latitude']
-    long = obj['iss_position']['longitude']
+    latitude = obj['iss_position']['latitude']
+    longitude = obj['iss_position']['longitude']
 
-    print("The ISS current location at %s UTC is %s lat, %s long" % (time, lat, long))
+    return latitude,longitude
+
+
+# Create the I2C interface.
+i2c = busio.I2C(SCL, SDA)
+ 
+# Create the SSD1306 OLED class.
+# The first two parameters are the pixel width and pixel height.  Change these
+# to the right size for your display!
+disp = adafruit_ssd1306.SSD1306_I2C(128, 32, i2c)
+ 
+# Clear display.
+disp.fill(0)
+disp.show()
+ 
+# Create blank image for drawing.
+# Make sure to create image with mode '1' for 1-bit color.
+width = disp.width
+height = disp.height
+image = Image.new('1', (width, height))
+ 
+# Get drawing object to draw on image.
+draw = ImageDraw.Draw(image)
+ 
+# Draw a black filled box to clear the image.
+draw.rectangle((0, 0, width, height), outline=0, fill=0)
+ 
+# Draw some shapes.
+# First define some constants to allow easy resizing of shapes.
+#padding = -2
+padding = -1
+top = padding
+bottom = height-padding
+# Move left to right keeping track of the current x position for drawing shapes.
+x = 0
+ 
+ 
+# Load default font.
+font = ImageFont.load_default()
+
+while True:
+ 
+    # Draw a black filled box to clear the image.
+    draw.rectangle((0, 0, width, height), outline=0, fill=0)
+
+    latitude, longitude = get_current_location()
+    # Write four lines of text.
+
+    nextDate = get_pass_time(35.216087, -80.853537)
+
+    today = datetime.now()
+    delta = abs (nextDate - today).total_seconds()
+
+    if delta > 300:
+        draw.text((x, top+0), "  ISS Tracker ", font=font, fill=255)
+        draw.text((x, top+8), "lat:" + str(latitude) , font=font, fill=255)
+        draw.text((x, top+16), "ln:" + str(longitude) , font=font, fill=255)
+        draw.text((x, top+24), nextDate.strftime('%Y-%m-%d %H:%M:%S') , font=font, fill=255)
+
+    else:
+        draw.text((x, top+8), '   PASSING SOON!' , font=font, fill=255)
+        draw.text((x, top+24), nextDate.strftime('%Y-%m-%d %H:%M:%S') , font=font, fill=255)
+
+ 
+    # Display image.
+    disp.image(image)
+    disp.show()
+    time.sleep(5)
 
 
 def get_crew_members():
@@ -48,33 +116,4 @@ def get_crew_members():
             print('CRAFT: %s' % key)
             for person in list(group):
                 print("- %s " % person['name'])
-
-
-def get_pass_time(lat, long):
-    obj = try_fetch_data("http://api.open-notify.org/iss-pass.json?lat=%s&lon=%s" % (lat, long))
-
-    if obj:
-        times = obj['response']
-
-        print("ISS will be seen on %s lat, %s long during this times: " % (lat, long))
-        for time in times:
-            date = datetime.utcfromtimestamp(time['risetime']).strftime('%Y-%m-%d %H:%M:%S')
-            print("time: %s - duration: %s seconds" % (date, time['duration']))
-
-
-def try_fetch_data(url):
-    response = requests.get(url)
-
-    obj = json.loads(response.content)
-
-    if response.status_code != 200:
-        print('%s: %s' % (obj['message'], obj['reason']))
-        return None
-
-    return obj
-
-
-if __name__ == "__main__":
-    main()
-
 
