@@ -8,6 +8,7 @@ import adafruit_ssd1306
 
 import json
 import requests
+import logging
 from datetime import datetime, date
 
 
@@ -73,7 +74,11 @@ x = 0
  
 # Load default font.
 font = ImageFont.load_default()
-
+logReported = False;
+logging.basicConfig(filename="issTracker.log", level=logging.INFO)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.info("ISS Tracker started!")
 while True:
  
     # Draw a black filled box to clear the image.
@@ -88,12 +93,17 @@ while True:
     delta = abs (nextDate - today).total_seconds()
 
     if delta > 300:
+        logReported = False;
         draw.text((x, top+0), "  ISS Tracker ", font=font, fill=255)
         draw.text((x, top+8), "lat:" + str(latitude) , font=font, fill=255)
         draw.text((x, top+16), "ln:" + str(longitude) , font=font, fill=255)
         draw.text((x, top+24), nextDate.strftime('%Y-%m-%d %H:%M:%S') , font=font, fill=255)
 
     else:
+        if not logReported:
+            logging.info("ISS will pass around " + nextDate.strftime('%Y-%m-%d %H:%M:%S'))
+            logReported = True
+            
         draw.text((x, top+8), '   PASSING SOON!' , font=font, fill=255)
         draw.text((x, top+24), nextDate.strftime('%Y-%m-%d %H:%M:%S') , font=font, fill=255)
 
