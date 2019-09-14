@@ -19,10 +19,11 @@ import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
 
 class Board:
-    def __init__(self, btnPin, btnUp, btnDown):
+    def __init__(self, btnPin, btnUpPin, btnDownPin, buzzerPin):
         self.btnPin = btnPin
-        self.btnUp = btnUp
-        self.btnDown = btnDown
+        self.btnUp = btnUpPin
+        self.btnDown = btnDownPin
+        self.buzzerPin = buzzerPin
 
     def init(self):
         
@@ -38,6 +39,11 @@ class Board:
         # Setting up Down button
         GPIO.setup(self.btnDown, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
+        # Setting up Buzzer
+        GPIO.setup(self.buzzerPin, GPIO.OUT)
+
+        
+
     def is_button_pressed(self):
         return GPIO.input(self.btnPin) == GPIO.LOW
 
@@ -46,6 +52,13 @@ class Board:
 
     def is_downbutton_pressed(self):
         return GPIO.input(self.btnDown) == GPIO.LOW
+
+    def beep(self, duration):
+        GPIO.output(self.buzzerPin, GPIO.HIGH)
+        time.sleep(duration)
+        GPIO.output(self.buzzerPin, GPIO.LOW)
+
+        
 
             
 class Display:
@@ -268,8 +281,7 @@ class PeopleScreen(Screen):
                         display.text(line, iss.people[index], selected = True)
                     else:
                         display.text(line, iss.people[index])
-
-               
+         
     def on_click(self):
         return MainMenuScreen()
 
@@ -308,7 +320,6 @@ class TimesScreen(Screen):
                         display.text(line, iss.times[index], selected = True)
                     else:
                         display.text(line, iss.times[index])
-
                
     def on_click(self):
         return MainMenuScreen()
@@ -318,7 +329,7 @@ class IssTracker:
         self.current = SummaryScreen()
         self.display = Display()
         self.iss = ISS()
-        self.board = Board(5, 25, 6) 
+        self.board = Board(5, 25, 6,23) 
         
         
     def init(self):
@@ -334,7 +345,7 @@ class IssTracker:
             self.iss.track()
             time.sleep(5)
             
-    def loop(self):
+    def loop(self):       
         while True:
             self.display.clear()
             self.current.paint(self.display, self.iss)
@@ -342,13 +353,15 @@ class IssTracker:
             
             if self.board.is_button_pressed():
                 self.current = self.current.on_click()
+                self.board.beep(0.05)
 
             if self.board.is_upbutton_pressed():
-                self.current = self.current.on_up()
+                self.current.on_up()
+                self.board.beep(0.05)
 
             if self.board.is_downbutton_pressed():
-                self.current = self.current.on_down()
-            pass
+                self.current.on_down()
+                self.board.beep(0.05)
 
 if __name__ == "__main__":
     tracker = IssTracker()
