@@ -15,11 +15,11 @@ The tracker provide 4 main screens:
 The final product looks like this:
 
 
-![Main Menu Screen](/images/MainMenu.jpeg)
+![Main Menu Screen](/images/MainMenu.JPEG)
 
-![People Screen](/images/People.jpeg)
+![People Screen](/images/People.JPEG)
 
-![Times Screen](/images/Times.jpeg)
+![Times Screen](/images/Times.JPEG)
 
 ![Summary Screen](/images/Summary.jpeg)
 
