@@ -7,10 +7,10 @@ The code is meant to run in a raspberry pi using the circuit shown below:
 
 The tracker provide 4 main screens:
 
-1- Summary - shows the current location of the ISS and the next time it will pass by your location
-2- People - shows the current crew members
-3 Times - shows the next times that will pass by your location
-4- Main menu - allows the navigation between other screns
+* Summary - shows the current location of the ISS and the next time it will pass by your location
+* People - shows the current crew members
+* Times - shows the next times that will pass by your location
+* Main menu - allows the navigation between other screns
 
 The final product looks like this:
 
