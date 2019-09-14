@@ -16,7 +16,6 @@ from abc import ABC, abstractmethod
 from threading import Thread
 import RPi.GPIO as GPIO
 import Adafruit_GPIO.SPI as SPI
-import Adafruit_MCP3008
 
 class Board:
     def __init__(self, btnPin, btnUpPin, btnDownPin, buzzerPin):
